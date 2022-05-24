@@ -25,9 +25,10 @@ import org.apache.flink.table.api.ValidationException;
 import org.apache.http.HttpHost;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.apache.flink.streaming.connectors.elasticsearch.table.ElasticsearchOptions.HOSTS_OPTION;
+import static org.apache.flink.streaming.connectors.elasticsearch.table.ElasticsearchOptions.*;
 
 /** Elasticsearch 7 specific configuration. */
 @Internal
@@ -66,5 +67,14 @@ final class Elasticsearch7Configuration extends ElasticsearchConfiguration {
                             host, HOSTS_OPTION.key()),
                     e);
         }
+    }
+
+    // zyw
+    public Optional<String> getTrustStorePath() {
+        return config.getOptional(TRUST_STORE_PATH);
+    }
+
+    public Optional<String> getTrustStorePassWord() {
+        return config.getOptional(TRUST_STORE_PASSWORD);
     }
 }

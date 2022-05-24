@@ -76,6 +76,8 @@ Prerequisites for building Flink:
 git clone https://github.com/apache/flink.git
 cd flink
 mvn clean package -DskipTests # this will take up to 10 minutes
+使用scala-2.12编译
+mvn clean package -DskipTests -Dscala-2.12
 ```
 
 Flink is now installed in `build-target`.

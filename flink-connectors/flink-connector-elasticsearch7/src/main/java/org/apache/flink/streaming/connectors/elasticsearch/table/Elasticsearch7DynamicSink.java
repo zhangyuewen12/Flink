@@ -36,7 +36,9 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.ssl.SSLContexts;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -44,7 +46,9 @@ import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.common.xcontent.XContentType;
 
 import javax.annotation.Nullable;
+import javax.net.ssl.SSLContext;
 
+import java.net.URL;
 import java.util.List;
 import java.util.Objects;
 
@@ -150,7 +154,9 @@ final class Elasticsearch7DynamicSink implements DynamicTableSink {
                         new AuthRestClientFactory(
                                 config.getPathPrefix().orElse(null),
                                 config.getUsername().get(),
-                                config.getPassword().get()));
+                                config.getPassword().get(),
+                                config.getTrustStorePath().get(),
+                                config.getTrustStorePassWord().get()));
             } else {
                 builder.setRestClientFactory(
                         new DefaultRestClientFactory(config.getPathPrefix().orElse(null)));
@@ -219,12 +225,17 @@ final class Elasticsearch7DynamicSink implements DynamicTableSink {
         private final String username;
         private final String password;
         private transient CredentialsProvider credentialsProvider;
+        private String trustStorePath;
+        private String trustStorePassWord;
 
         public AuthRestClientFactory(
-                @Nullable String pathPrefix, String username, String password) {
+                @Nullable String pathPrefix, String username, String password,
+                String trustStorePath, String trustStorePassWord) {
             this.pathPrefix = pathPrefix;
             this.password = password;
             this.username = username;
+            this.trustStorePath = trustStorePath;
+            this.trustStorePassWord = trustStorePassWord;
         }
 
         @Override
@@ -237,10 +248,24 @@ final class Elasticsearch7DynamicSink implements DynamicTableSink {
                 credentialsProvider.setCredentials(
                         AuthScope.ANY, new UsernamePasswordCredentials(username, password));
             }
+            // zyw 配置SSL 配置
+            SSLContext sslContext = null;
+            URL trustStoreUrl = Elasticsearch7DynamicSink.class.getClassLoader().getResource(trustStorePath);
+            char[] trustStorePassWordChars = trustStorePassWord.toCharArray();
+            try {
+                sslContext = SSLContexts.custom()
+                        .loadTrustMaterial(trustStoreUrl,trustStorePassWordChars,new TrustSelfSignedStrategy())
+                        .build();
+            } catch (Exception e)  {
+                e.printStackTrace();
+            }
+            SSLContext finalSslContext = sslContext;
             restClientBuilder.setHttpClientConfigCallback(
-                    httpAsyncClientBuilder ->
-                            httpAsyncClientBuilder.setDefaultCredentialsProvider(
-                                    credentialsProvider));
+                    httpAsyncClientBuilder -> {
+                        httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+                        httpAsyncClientBuilder.setSSLContext(finalSslContext);
+                        return httpAsyncClientBuilder;
+                    });
         }
 
         @Override

@@ -146,5 +146,18 @@ public class ElasticsearchOptions {
                             "The format must produce a valid JSON document. "
                                     + "Please refer to the documentation on formats for more details.");
 
+    // zyw
+    public static final ConfigOption<String> TRUST_STORE_PATH =
+            ConfigOptions.key("sink.trust_store_path")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("SSL 配置");
+
+    public static final ConfigOption<String> TRUST_STORE_PASSWORD =
+            ConfigOptions.key("sink.trust_store_password")
+                    .stringType()
+                    .noDefaultValue()
+                    .withDescription("SSL 配置");
+
     private ElasticsearchOptions() {}
 }
